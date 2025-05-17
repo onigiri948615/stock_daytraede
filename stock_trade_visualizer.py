@@ -19,7 +19,7 @@ def color_profit_normalized(val, max_abs):
         return ''
 
 def show_summary(df: pd.DataFrame):
-    df = df[df["取引"].astype(str).str.contains("信用", na=False)]
+    #df = df[df["取引"].astype(str).str.contains("信用", na=False)]
 
     # 整形
     df["約定日"] = pd.to_datetime(df["約定日"], errors="coerce")
@@ -109,41 +109,54 @@ def show_summary(df: pd.DataFrame):
     st.subheader("📈 日毎の総損益と累積損益")
     daily["累積損益"] = daily["総損益"].cumsum()
 
-    y_min = min(daily["総損益"].min(), daily["累積損益"].min())
-    y_max = max(daily["総損益"].max(), daily["累積損益"].max())
-    padding = (y_max - y_min) * 0.1
-    y_range = [y_min - padding, y_max + padding]
+    # 累積損益の計算
+    daily["累積損益"] = daily["総損益"].cumsum()
 
+    # グラフ作成
     fig = go.Figure()
-    fig.add_trace(go.Bar(
-        x=daily["日付"],
-        y=daily["総損益"],
-        name="日毎の損益",
-        yaxis="y1"
-    ))
+
+    # --- 上段：累積損益（折れ線グラフ） ---
     fig.add_trace(go.Scatter(
         x=daily["日付"],
         y=daily["累積損益"],
         mode="lines+markers",
         name="累積損益",
+        line=dict(color="royalblue", width=2),
+        yaxis="y1"
+    ))
+
+    # --- 下段：日毎の損益（棒グラフ） ---
+    fig.add_trace(go.Bar(
+        x=daily["日付"],
+        y=daily["総損益"],
+        name="日毎の損益",
+        marker_color="lightblue",
         yaxis="y2"
     ))
+
+    # レイアウト調整（上下に2段で表示）
     fig.update_layout(
-        xaxis_title="日付",
+        height=600,
+        xaxis=dict(domain=[0, 1], title="日付"),
         yaxis=dict(
-            title="日毎の損益（円）",
-            range=y_range,
-            tickformat=","
+            title="累積損益（円）",
+            domain=[0.4, 1],  # 上段40%〜100%
+            tickformat=",",
+            zeroline=True,
+            zerolinewidth=2,
+            zerolinecolor="gray"
         ),
         yaxis2=dict(
-            title="累積損益（円）",
-            overlaying="y",
-            side="right",
-            range=y_range,
+            title="日毎の損益（円）",
+            domain=[0, 0.3],  # 下段0%〜30%
             tickformat=",",
-            showgrid=False
+            zeroline=True,
+            zerolinewidth=2,
+            zerolinecolor="gray"
         ),
-        legend=dict(x=0.01, y=0.99),
-        height=500
+        legend=dict(orientation="h", y=1.05, x=0),
+        margin=dict(t=50, b=50)
     )
+
+
     st.plotly_chart(fig, use_container_width=True)
