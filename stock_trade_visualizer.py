@@ -19,7 +19,7 @@ def color_profit_normalized(val, max_abs):
         return ''
 
 def show_summary(df: pd.DataFrame):
-    #df = df[df["取引"].astype(str).str.contains("信用", na=False)]
+    df = df[df["取引"].astype(str).str.contains("信用", na=False)]
 
     # 整形
     df["約定日"] = pd.to_datetime(df["約定日"], errors="coerce")
