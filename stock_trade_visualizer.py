@@ -24,6 +24,9 @@ def show_summary(df: pd.DataFrame):
     # 整形
     df["約定日"] = pd.to_datetime(df["約定日"], errors="coerce")
     df["受渡金額/決済損益"] = pd.to_numeric(df["受渡金額/決済損益"], errors="coerce")
+    
+    # 有効な数値データのみを対象とする
+    df = df.dropna(subset=["受渡金額/決済損益"])
 
     df["年月"] = df["約定日"].dt.to_period("M")
     df["日付"] = df["約定日"].dt.date
@@ -38,23 +41,25 @@ def show_summary(df: pd.DataFrame):
         勝ち数=("勝ち", "sum"),
         総取引数=("勝ち", "count"),
         総損益=("受渡金額/決済損益", "sum"),
-        勝率=("勝ち", lambda x: (x.sum() / len(x)) * 100),
-        最大損失=("受渡金額/決済損益", "min"),
+        勝率=("勝ち", lambda x: 100.0 if len(x) == x.sum() else (x.sum() / len(x)) * 100),
+        最大利益=("勝ち損益のみ", "max"),
+        最大損失=("負け損益のみ", "min"),
         平均利益=("勝ち損益のみ", "mean"),
         平均損失=("負け損益のみ", "mean"),
         平均損益=("受渡金額/決済損益", "mean")
-    ).reset_index()
+    ).reset_index().sort_values("日付", ascending=False)  # 日付の降順に並び替え
 
     monthly = df.groupby("年月").agg(
         勝ち数=("勝ち", "sum"),
         総取引数=("勝ち", "count"),
         総損益=("受渡金額/決済損益", "sum"),
-        勝率=("勝ち", lambda x: (x.sum() / len(x)) * 100),
-        最大損失=("受渡金額/決済損益", "min"),
+        勝率=("勝ち", lambda x: 100.0 if len(x) == x.sum() else (x.sum() / len(x)) * 100),
+        最大利益=("勝ち損益のみ", "max"),
+        最大損失=("負け損益のみ", "min"),
         平均利益=("勝ち損益のみ", "mean"),
         平均損失=("負け損益のみ", "mean"),
         平均損益=("受渡金額/決済損益", "mean")
-    ).reset_index()
+    ).reset_index().sort_values("年月", ascending=False)  # 年月の降順に並び替え
 
     # 最大絶対値の取得（色付け用）
     max_daily_abs = daily["総損益"].abs().max()
@@ -66,6 +71,7 @@ def show_summary(df: pd.DataFrame):
         .format({
             "総損益": "{:,.0f} 円",
             "勝率": "{:.1f} %",
+            "最大利益": "{:,.0f} 円",  # 追加
             "最大損失": "{:,.0f} 円",
             "平均利益": "{:,.0f} 円",
             "平均損失": "{:,.0f} 円",
@@ -79,6 +85,7 @@ def show_summary(df: pd.DataFrame):
         .format({
             "総損益": "{:,.0f} 円",
             "勝率": "{:.1f} %",
+            "最大利益": "{:,.0f} 円",  # 追加
             "最大損失": "{:,.0f} 円",
             "平均利益": "{:,.0f} 円",
             "平均損失": "{:,.0f} 円",
